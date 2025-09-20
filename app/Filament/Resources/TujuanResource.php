@@ -14,7 +14,7 @@ class TujuanResource extends Resource
 {
     protected static ?string $model = Tujuan::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-inbox'; // Icon lebih relevan
     protected static ?string $navigationLabel = 'Tujuan Surat';
     protected static ?string $pluralModelLabel = 'Tujuan Surat';
     protected static ?string $modelLabel = 'Tujuan';
@@ -44,8 +44,12 @@ class TujuanResource extends Resource
                     ->dateTime('d M Y H:i')
                     ->sortable(),
             ])
+            ->filters([
+            ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

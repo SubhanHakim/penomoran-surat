@@ -17,7 +17,10 @@ class SuratResource extends Resource
 {
     protected static ?string $model = Surat::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-envelope';
+    protected static ?string $navigationLabel = 'Surat'; // Tambahkan ini
+    protected static ?string $pluralModelLabel = 'Surat'; // Tambahkan ini
+    protected static ?string $modelLabel = 'Surat';
 
     public static function form(Form $form): Form
     {
@@ -63,10 +66,20 @@ class SuratResource extends Resource
                 Tables\Columns\TextColumn::make('created_at')->label('Dibuat')->dateTime('d M Y H:i')->sortable(),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('tujuan_id')
+                    ->label('Tujuan')
+                    ->relationship('tujuan', 'nama'),
+                Tables\Filters\SelectFilter::make('jenis_surat')
+                    ->label('Jenis Surat')
+                    ->options([
+                        'masuk' => 'Surat Masuk',
+                        'keluar' => 'Surat Keluar',
+                    ]),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
