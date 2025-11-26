@@ -13,12 +13,13 @@ return new class extends Migration
     {
         Schema::create('surats', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tujuan_id')->constrained('tujuans');
+            $table->string('kode_klafifikasi')->nullable();
+            $table->enum('daftar_pengirim', ['DPRD', 'Sekretariat DPRD'])->default('DPRD');
             $table->string('nomor_surat')->unique();
-            $table->string('perihal');
-            $table->string('ditujukan_kepada');
+            $table->string('perihal')->nullable();
+            $table->string('ditujukan_kepada')->nullable();
             $table->string('jenis_surat')->nullable();
-            $table->date('tanggal_surat');
+             $table->tinyInteger('bulan')->default((int) now()->format('n'));
             $table->timestamps();
         });
     }
