@@ -19,7 +19,8 @@ return new class extends Migration
             $table->string('perihal')->nullable();
             $table->string('ditujukan_kepada')->nullable();
             $table->string('jenis_surat')->nullable();
-             $table->tinyInteger('bulan')->default((int) now()->format('n'));
+            $table->tinyInteger('bulan')->default((int) now()->format('n'));
+            $table->smallInteger('tahun')->default((int) now()->format('Y'));
             $table->timestamps();
         });
     }
