@@ -37,7 +37,6 @@ class SuratResource extends Resource
                             $set('kode_klafifikasi', null);
                             $set('bulan', null);
                             $set('tahun', null);
-                            // pastikan nomor_surat disesuaikan jika perlu
                             $set('nomor_surat', null);
                         } else {
                             $set('perihal', null);
@@ -57,13 +56,13 @@ class SuratResource extends Resource
                 // SURAT MASUK fields
                 Forms\Components\TextInput::make('ditujukan_kepada')
                     ->label('Ditujukan Kepada')
-                    ->visible(fn (callable $get) => $get('jenis_surat') === 'masuk')
-                    ->required(fn (callable $get) => $get('jenis_surat') === 'masuk'),
+                    ->visible(fn(callable $get) => $get('jenis_surat') === 'masuk')
+                    ->required(fn(callable $get) => $get('jenis_surat') === 'masuk'),
 
                 Forms\Components\TextInput::make('perihal')
                     ->label('Perihal')
-                    ->visible(fn (callable $get) => $get('jenis_surat') === 'masuk')
-                    ->required(fn (callable $get) => $get('jenis_surat') === 'masuk'),
+                    ->visible(fn(callable $get) => $get('jenis_surat') === 'masuk')
+                    ->required(fn(callable $get) => $get('jenis_surat') === 'masuk'),
 
                 // SURAT KELUAR fields
                 Forms\Components\Select::make('kode_klafifikasi')
@@ -80,40 +79,23 @@ class SuratResource extends Resource
                         '800' => '800',
                         '900' => '900',
                     ])
-                    ->visible(fn (callable $get) => $get('jenis_surat') === 'keluar')
-                    ->required(fn (callable $get) => $get('jenis_surat') === 'keluar')
+                    ->visible(fn(callable $get) => $get('jenis_surat') === 'keluar')
+                    ->required(fn(callable $get) => $get('jenis_surat') === 'keluar')
                     ->reactive()
                     ->afterStateUpdated(function ($state, $set) {
-                        // set default sub-urut sesuai next number (hilangkan leading zeros)
+                        // set nomor_surat otomatis berdasarkan kode terpilih (kode.seq)
                         $next = intval(Surat::generateNextNumber($state));
-                        $set('sub_nomor', $next);
-                        // set full nomor_surat tampil: "kode.sub"
                         $set('nomor_surat', "{$state}.{$next}");
                     }),
 
-                // sub nomor (urut) yang user bisa edit — default auto next
-                Forms\Components\TextInput::make('sub_nomor')
-                    ->label('Nomor Urut')
-                    ->visible(fn (callable $get) => $get('jenis_surat') === 'keluar')
-                    ->numeric()
-                    ->reactive()
-                    ->afterStateUpdated(function ($state, $set, $get) {
-                        $kode = $get('kode_klafifikasi') ?? '';
-                        if ($kode) {
-                            $set('nomor_surat', "{$kode}.{$state}");
-                        } else {
-                            $set('nomor_surat', (string) $state);
-                        }
-                    })
-                    ->default(fn (callable $get) => intval(Surat::generateNextNumber($get('kode_klafifikasi') ?? null))),
-
-                // final nomor yang disimpan — disabled, di-set otomatis dari kode + sub_nomor
+                // final nomor yang disimpan — otomatis di-set dari kode_klafifikasi, user tidak perlu input sub-urut
                 Forms\Components\TextInput::make('nomor_surat')
-                    ->label('Nomor Surat (format: kode.urut)')
+                    ->label('Nomor Surat (urut)')
+                    ->default(fn(callable $get) => (string) Surat::generateNextNumber($get('kode_klafifikasi') ?? null))
                     ->disabled()
-                    ->required()
                     ->unique(ignoreRecord: true)
-                    ->visible(fn (callable $get) => $get('jenis_surat') === 'keluar'),
+                    ->visible(fn(callable $get) => $get('jenis_surat') === 'keluar')
+                    ->required(fn(callable $get) => $get('jenis_surat') === 'keluar'),
 
                 Forms\Components\Select::make('bulan')
                     ->label('Bulan')
@@ -132,15 +114,15 @@ class SuratResource extends Resource
                         12 => 'Desember',
                     ])
                     ->default((int) now()->format('n'))
-                    ->visible(fn (callable $get) => $get('jenis_surat') === 'keluar')
-                    ->required(fn (callable $get) => $get('jenis_surat') === 'keluar'),
+                    ->visible(fn(callable $get) => $get('jenis_surat') === 'keluar')
+                    ->required(fn(callable $get) => $get('jenis_surat') === 'keluar'),
 
                 Forms\Components\TextInput::make('tahun')
                     ->label('Tahun')
                     ->default((int) now()->format('Y'))
                     ->numeric()
-                    ->visible(fn (callable $get) => $get('jenis_surat') === 'keluar')
-                    ->required(fn (callable $get) => $get('jenis_surat') === 'keluar'),
+                    ->visible(fn(callable $get) => $get('jenis_surat') === 'keluar')
+                    ->required(fn(callable $get) => $get('jenis_surat') === 'keluar'),
             ]);
     }
 
@@ -151,8 +133,6 @@ class SuratResource extends Resource
                 Tables\Columns\TextColumn::make('kode_klafifikasi')->label('Kode Klasifikasi'),
                 Tables\Columns\TextColumn::make('nomor_surat')->label('Nomor Surat')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('daftar_pengirim')->label('Pengirim')->sortable(),
-                Tables\Columns\TextColumn::make('ditujukan_kepada')->label('Ditujukan Kepada')->searchable(),
-                Tables\Columns\TextColumn::make('perihal')->label('Perihal')->searchable(),
                 Tables\Columns\TextColumn::make('bulan_roman')
                     ->label('Bulan')
                     ->getStateUsing(fn($record) => $record->bulan_roman)
@@ -166,7 +146,7 @@ class SuratResource extends Resource
                     ->form([
                         Forms\Components\TextInput::make('ditujukan_kepada')->label('Ditujukan Kepada'),
                     ])
-                    ->query(fn ($query, array $data) => $query->when($data['ditujukan_kepada'] ?? null, fn($q, $v) => $q->where('ditujukan_kepada', 'like', "%{$v}%"))),
+                    ->query(fn($query, array $data) => $query->when($data['ditujukan_kepada'] ?? null, fn($q, $v) => $q->where('ditujukan_kepada', 'like', "%{$v}%"))),
 
                 Tables\Filters\SelectFilter::make('jenis_surat')
                     ->label('Jenis Surat')

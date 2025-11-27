@@ -22,57 +22,29 @@ class Surat extends Model
      * Generate next sequence number (3 digits string) per kode_klafifikasi.
      * Returns padded string like "001". You can cast to int to remove padding.
      */
-    public static function generateNextNumber(?string $kodeKlasifikasi = null): string
+    public static function generateNextNumber(?string $kode = null): int
     {
         $query = static::query();
-
-        if ($kodeKlasifikasi) {
-            $query->where('kode_klafifikasi', $kodeKlasifikasi);
+        if ($kode) {
+            $query->where('kode_klafifikasi', $kode);
         }
-
         $last = $query->orderByDesc('created_at')->value('nomor_surat');
-
-        $next = 1;
-
-        if ($last) {
-            // last may be "000.001" or "001" etc — extract trailing number
-            if (preg_match('/(\d+)(?!.*\d)/', $last, $m)) {
-                $next = intval($m[1]) + 1;
-            } else {
-                $next = $query->count() + 1;
-            }
-        } else {
-            // if none, next = 1
-            $next = 1;
+        if (! $last) {
+            return 1;
         }
-
-        return str_pad($next, 3, '0', STR_PAD_LEFT);
+        if (preg_match('/(\d+)(?!.*\d)/', $last, $m)) {
+            return intval($m[1]) + 1;
+        }
+        return $query->count() + 1;
     }
 
     protected static function booted()
     {
         static::creating(function ($model) {
-            // jika nomor_surat belum diset, buat berdasarkan kode_klafifikasi + sequence
             if (empty($model->nomor_surat)) {
-                if (! empty($model->kode_klafifikasi)) {
-                    // gunakan generateNextNumber lalu cast ke int supaya tidak ada leading zeros
-                    $seq = intval(static::generateNextNumber($model->kode_klafifikasi));
-                    $model->nomor_surat = "{$model->kode_klafifikasi}.{$seq}";
-                } else {
-                    // fallback: hanya sequence
-                    $seq = intval(static::generateNextNumber(null));
-                    $model->nomor_surat = (string) $seq;
-                }
+                // nomor hanya urut angka tanpa kode
+                $model->nomor_surat = (string) static::generateNextNumber($model->kode_klafifikasi ?? null);
             }
-
-            // kosongkan field yang tidak relevan untuk surat keluar
-            if (($model->jenis_surat ?? null) !== 'masuk') {
-                $model->perihal = null;
-                $model->ditujukan_kepada = null;
-            }
-        });
-
-        static::updating(function ($model) {
             if (($model->jenis_surat ?? null) !== 'masuk') {
                 $model->perihal = null;
                 $model->ditujukan_kepada = null;
@@ -88,9 +60,18 @@ class Surat extends Model
         }
 
         $map = [
-            12 => 'XII', 11 => 'XI', 10 => 'X', 9 => 'IX',
-            8 => 'VIII', 7 => 'VII', 6 => 'VI', 5 => 'V',
-            4 => 'IV', 3 => 'III', 2 => 'II', 1 => 'I',
+            12 => 'XII',
+            11 => 'XI',
+            10 => 'X',
+            9 => 'IX',
+            8 => 'VIII',
+            7 => 'VII',
+            6 => 'VI',
+            5 => 'V',
+            4 => 'IV',
+            3 => 'III',
+            2 => 'II',
+            1 => 'I',
         ];
 
         return $map[(int)$bulan] ?? (string)$bulan;
